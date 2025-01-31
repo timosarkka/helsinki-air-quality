@@ -1,17 +1,43 @@
 import requests
-import pandas
+import pandas as pd
 import xml.etree.ElementTree as ET
 
+# Make API call and fetch the XML-data as a string
 def fetch_air_quality_data():
     url = 'https://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::observations::airquality::hourly::simple&region=helsinki'
     response = requests.get(url)
-    airq_output = response.text
-    return airq_output
+    return response.text
 
-def parse_air_quality_data():
+# Parse data from XML to DataFrame
+def parse_aq_data_to_df(xml_data):
+    namespaces = {
+        "wfs": "http://www.opengis.net/wfs/2.0",
+        "BsWfs": "http://xml.fmi.fi/schema/wfs/2.0",
+        "gml": "http://www.opengis.net/gml/3.2"
+    }
+
+    # Get the root tag and initialize empty list for saving row-level data
     root = ET.fromstring(xml_data)
-    namespace = {'gml': 'http://www.opengis.net/gml/3.2'}
-    records = []
+    data = []
 
-xml_data = fetch_air_quality_data()
-parsed_data = parse_air_quality_data(xml_data)
+    # Loop through the nested XML members and extract needed data
+    for member in root.findall("wfs:member", namespaces):
+        element = member.find("BsWfs:BsWfsElement", namespaces)
+        if element is not None:
+            coords = element.find("BsWfs:Location/gml:Point/gml:pos", namespaces)
+            time = element.find("BsWfs:Time", namespaces)
+            param_name = element.find("BsWfs:ParameterName", namespaces)
+            param_value = element.find("BsWfs:ParameterValue", namespaces)
+            data.append([coords.text.strip(), time.text, param_name.text, param_value.text])
+
+    # Save to DataFrame and return it
+    df = pd.DataFrame(data, columns=['Coordinates', 'Time', 'Parameter Name', 'Value'])
+    return df
+
+# Main function
+def main():
+    xml_data = fetch_air_quality_data()
+    parsed_df = parse_aq_data_to_df(xml_data)
+    print(parsed_df)
+
+main()
