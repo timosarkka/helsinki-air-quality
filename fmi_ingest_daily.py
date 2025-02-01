@@ -1,6 +1,22 @@
+import configparser
 import requests
 import pandas as pd
 import xml.etree.ElementTree as ET
+from sqlalchemy import create_engine
+
+# Load configuration file
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+# Get credentials from config
+sf = config['snowflake']
+user = sf['user']
+password = sf['password']
+account = sf['account']
+warehouse = sf['warehouse']
+database = sf['database']
+schema = sf['schema']
+role = sf['role']
 
 # Make API call and fetch the XML-data as a string
 def fetch_air_quality_data():
@@ -34,10 +50,15 @@ def parse_aq_data_to_df(xml_data):
     df = pd.DataFrame(data, columns=['Coordinates', 'Time', 'Parameter Name', 'Value'])
     return df
 
+def write_to_snowflake(parsed_df):
+    connection_string = (f'snowflake://{user}:{password}@{account}/{database}/{schema}?warehouse={warehouse}&role={role}')
+    engine = create_engine(connection_string)
+    parsed_df.to_sql(name='target_table', con=engine, if_exists='append', index=False)
+
 # Main function
 def main():
     xml_data = fetch_air_quality_data()
     parsed_df = parse_aq_data_to_df(xml_data)
-    print(parsed_df)
+    write_to_snowflake(parsed_df)
 
 main()
