@@ -47,7 +47,7 @@ def parse_aq_data_to_df(xml_data):
             data.append([coords.text.strip(), time.text, param_name.text, param_value.text])
 
     # Save to DataFrame and return it
-    df = pd.DataFrame(data, columns=['Coordinates', 'Time', 'Parameter Name', 'Value'])
+    df = pd.DataFrame(data, columns=['COORDINATES', 'TIME', 'PARAMETER', 'VALUE'])
     return df
 
 def write_to_snowflake(parsed_df):
