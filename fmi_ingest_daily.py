@@ -53,12 +53,15 @@ def parse_aq_data_to_df(xml_data):
 def write_to_snowflake(parsed_df):
     connection_string = (f'snowflake://{user}:{password}@{account}/{database}/{schema}?warehouse={warehouse}&role={role}')
     engine = create_engine(connection_string)
-    parsed_df.to_sql(name='target_table', con=engine, if_exists='append', index=False)
+    parsed_df.to_sql(name='FMI_AIR_QUALITY', con=engine, if_exists='append', index=False)
 
 # Main function
 def main():
     xml_data = fetch_air_quality_data()
+    print("Fetched data from FMI API successfully.")
     parsed_df = parse_aq_data_to_df(xml_data)
+    print("Converted data to a DataFrame successfully.")
     write_to_snowflake(parsed_df)
+    print("Data was written to Snowflake schema RAW successfully.")
 
 main()
