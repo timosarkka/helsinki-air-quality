@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 
 # Load configuration file
 config = configparser.ConfigParser()
-config.read('config.ini')
+config.read('../config.ini')
 
 # Get credentials from config
 sf = config['snowflake']
@@ -53,7 +53,7 @@ def parse_aq_data_to_df(xml_data):
 def write_to_snowflake(parsed_df):
     connection_string = (f'snowflake://{user}:{password}@{account}/{database}/{schema}?warehouse={warehouse}&role={role}')
     engine = create_engine(connection_string)
-    parsed_df.to_sql(name='FMI_AIR_QUALITY', con=engine, if_exists='append', index=False)
+    parsed_df.to_sql(name='fmi_air_quality', con=engine, if_exists='append', index=False)
 
 # Main function
 def main():
