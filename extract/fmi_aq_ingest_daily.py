@@ -54,6 +54,7 @@ def write_to_snowflake(parsed_df):
     connection_string = (f'snowflake://{user}:{password}@{account}/{database}/{schema}?warehouse={warehouse}&role={role}')
     engine = create_engine(connection_string)
     parsed_df.to_sql(name='fmi_air_quality', con=engine, if_exists='append', index=False)
+    engine.dispose()  # Dispose of the engine
 
 # Main function
 def main():
