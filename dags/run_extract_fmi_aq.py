@@ -10,11 +10,11 @@ default_args = {
 }
 
 with DAG(
-    dag_id='run_extract_and_transform_fmi_aq',
+    dag_id='run_extract_fmi_aq',
     default_args=default_args,
-    description='Run a Python script to extract FMI air quality data. Run a dbt to transform data from raw to analytics schema.',
+    description='Run a Python script to extract FMI air quality data and save to Snowflake raw layer.',
     schedule_interval='*/10 * * * *', 
-    start_date=datetime(2025, 2, 5),
+    start_date=datetime(2025, 1, 1),
     catchup=False
 ) as dag:
     
@@ -24,14 +24,3 @@ with DAG(
         bash_command="python /Users/timosarkka/Projects/finnish-air-quality/extract/fmi_aq_ingest_daily.py",  
         cwd="/Users/timosarkka/Projects/finnish-air-quality/extract"  
     )
-
-    # Task 2: Run transform in dbt Cloud
-    run_dbt_cloud_job = DbtCloudRunJobOperator(
-        task_id='run_dbt_cloud',
-        job_id='70471823423702', 
-        check_interval=10,
-        timeout=300
-    )
-
-    # Define task order
-    run_extract_python >> run_dbt_cloud_job
