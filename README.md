@@ -8,26 +8,32 @@ The project implements a data pipeline to extract, transform, and load (ETL) air
 
 ## 2. Project Structure
 
+The project folders are structured as shown below. Obviously I have not provided config.ini for security reasons, but it's needed to make the necessary connection to Snowflake.
+
 ```
-├── airflow_dags/
+├── dags/
 │   ├── run_extract_fmi_aq.py  # Airflow DAG for orchestrating ETL
 ├── extract/
 │   ├── fmi_aq_ingest_daily.py  # Python script for extracting data from FMI API
-├── dbt/
-│   ├── models/
-│   │   ├── transformations/
-│   │   │   ├── fmi_air_quality_transformed.sql  # dbt model for data transformation
+├── transform/
+│   ├── fmi_air_quality.sql  # dbt model for data transformation
 ├── config.ini  # Configuration file with Snowflake credentials
 ```
 
+[EDITED UNTIL THIS FAR]
+
 ## 3. Tech Stack
+
+My tech stack for this project:
+
 - **Airflow**: Orchestrates the ETL pipeline
 - **Snowflake**: Cloud data warehouse for storing and processing data
 - **dbt**: Transforms and models data for analytics
 - **Python**: Used for data extraction from the FMI API
-- **Power BI**: (Future Work) Visualization of processed data
+- **Power BI**: Visualization and analytics of processed data
 
 ## 4. Data Pipeline Architecture
+
 1. **Extract**: Fetches air quality data from FMI API and stores it in Snowflake (RAW schema)
 2. **Transform**: Uses dbt to clean, deduplicate, and format the data (ANALYTICS schema)
 3. **Load**: Transformed data is stored in Snowflake for further analysis
