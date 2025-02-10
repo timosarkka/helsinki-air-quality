@@ -1,19 +1,23 @@
+# Import Airflow libraries, datetime
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.providers.dbt.cloud.operators.dbt import DbtCloudRunJobOperator
 from datetime import datetime, timedelta
 
+# Define arguments, such as retry frequency
 default_args = {
     'owner': 'airflow',
-    'retries': 0,
+    'retries': 1,
     'retry_delay': timedelta(minutes=1)
 }
 
+# Define the actual DAG
+# Runs once an hour
 with DAG(
     dag_id='run_extract_fmi_aq',
     default_args=default_args,
     description='Run a Python script to extract FMI air quality data and save to Snowflake raw layer.',
-    schedule_interval='*/10 * * * *', 
+    schedule_interval='0 * * * *', 
     start_date=datetime(2025, 1, 1),
     catchup=False
 ) as dag:
