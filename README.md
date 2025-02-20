@@ -1,10 +1,8 @@
-# Finnish Air Quality Data Pipeline
+# Helsinki Air Quality Data Pipeline
 
 ## 1. Introduction
 
-I was curious about the air quality of my hometown, Helsinki. So I decided to do a quick data pipeline and analysis to research it. All the analyzed data is available for everyone through the Finnish Meteorological Institute (FMI) API, accessible here: https://en.ilmatieteenlaitos.fi/open-data
-
-The project implements a data pipeline to extract, transform, and load (ETL) air quality data to Snowflake. The pipeline is automated using Apache Airflow and transformed using dbt before being visualized in Power BI. A separate Python-script is used for data extraction.
+This project is a data engineering pipeline using Airflow, Snowflake and dbt. It ingests open air quality data from different locations in Helsinki via a python script and stores it in Snowflake. All the data is openly available through the Finnish Meteorological Institute (FMI) API, accessible here: https://en.ilmatieteenlaitos.fi/open-data
 
 ## 2. Project Structure
 
@@ -20,8 +18,6 @@ The project folders are structured as shown below. Obviously I have not provided
 ├── config.ini  # Configuration file with Snowflake credentials
 ```
 
-[EDITED UNTIL THIS FAR]
-
 ## 3. Tech Stack
 
 My tech stack for this project:
@@ -30,50 +26,49 @@ My tech stack for this project:
 - **Snowflake**: Cloud data warehouse for storing and processing data
 - **dbt**: Transforms and models data for analytics
 - **Python**: Used for data extraction from the FMI API
-- **Power BI**: Visualization and analytics of processed data
 
 ## 4. Data Pipeline Architecture
 
-1. **Extract**: Fetches air quality data from FMI API and stores it in Snowflake (RAW schema)
-2. **Transform**: Uses dbt to clean, deduplicate, and format the data (ANALYTICS schema)
-3. **Load**: Transformed data is stored in Snowflake for further analysis
-4. **Automate**: Airflow schedules and manages the entire ETL process
+A high level architecture diagram of the pipeline:
+
+![image](https://github.com/user-attachments/assets/e32a1a31-2ff9-4655-bf96-f48624881bba)
+
+1. The python-script calls the FMI API and fetches the air quality data from the last 12 hours.
+2. The data is saved to the raw layer of a Snowflake database.
+3. A dbt job runs 5 minutes after the data arrives on the Snowflake raw layer, transforms the data and saves it to the analytics layer.
+4. The whole pipeline is orchestrated with Apache Airflow, which runs the pipeline 2x a day, or every 12 hours.
+
+Details of each section are explained below.
 
 ## 5. Extracting Data
-- The Airflow DAG (`run_extract_fmi_aq.py`) triggers a Python script (`fmi_aq_ingest_daily.py`) to fetch air quality data from the FMI API every hour.
-- The Python script:
-  - Sends a request to the FMI API and retrieves XML data.
-  - Parses the XML data into a structured Pandas DataFrame.
-  - Loads the parsed data into Snowflake’s RAW schema.
+
+The Airflow DAG (`dags/run_extract_fmi_aq.py`) triggers a Python script (`extract/fmi_aq_ingest_daily.py`) to fetch air quality data from the FMI API twice a day. 
+
+The Python script sends a request to the FMI API and retrieves XML data. ElementTree is used for parsing the data, element by element, into a pandas dataframe. The dataframe is then written into a Snowflake database's raw-layer.
 
 ## 6. Transforming Data
-- The dbt model (`fmi_air_quality_transformed.sql`) performs transformations:
+
+The dbt model (`transform/fmi_air_quality_transformed.sql`) performs transformations:
   - Splits coordinate data into latitude and longitude.
   - Converts time values into timestamps.
   - Cleans parameter names.
   - Filters out invalid data (e.g., NaN values).
   - Deduplicates records based on timestamp.
+  
+The last step is done in order to make sure that there are no duplicate records being written to the analytics layer. Technically, this is achieved by partitioning the raw layer by latitude, longitude, parameter and timestamp. Results are then ordered by timestamp, and only the latest record is being qualified for the analytics layer.
 
 ## 7. Loading Data
-- Extracted raw data is initially stored in Snowflake’s RAW schema.
-- Transformed and cleaned data is stored in the ANALYTICS schema.
-- The final dataset is ready for reporting and visualization.
 
-## 8. Automation
-- Airflow automates the entire pipeline:
-  - Extract script runs hourly via an Airflow DAG.
-  - dbt transformations are triggered after data ingestion.
-  - Future enhancements may include notifications for failures or monitoring improvements.
+Finally, the transformed data is written to the Snowflake's analytics layer. The finalized dataset would be ready to be used e.g. for reporting and visualization.
 
-## 9. Results and Analysis
-*(To be added: Power BI dashboard visualization.)*
+## 8. Orchestration
 
-## 10. Future Work
-- Implement additional quality checks on data.
-- Expand the dataset to include more regions.
-- Optimize dbt transformations for performance.
-- Automate Power BI dashboard updates.
+Apache Airflow is used for automating the entire pipeline. Extract script runs 2x a day via an Airflow DAG. dbt transformations are triggered 5 minutes after data ingestion. The completion of different jobs can also be monitored from the Airflow webserver.
 
----
-This project demonstrates a fully automated data pipeline using modern data engineering tools, ensuring clean and structured air quality data for analytics.
+## 9. Future Work
 
+A lot could still be done to improve this pipeline, this is just a basic implementation. Some things still to be done:
+
+- Implement testing and data quality checks via dbt.
+- Expand the dataset to include more regions than only Helsinki.
+- Visualize the dataset with Power BI.
