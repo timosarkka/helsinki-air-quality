@@ -42,13 +42,13 @@ Details of each section are explained below.
 
 ## 5. Extracting Data
 
-The Airflow DAG (`dags/run_extract_fmi_aq.py`) triggers a Python script (`extract/fmi_aq_ingest_daily.py`) to fetch air quality data from the FMI API twice a day. 
+The Airflow DAG (`dags/run_extract_fmi_aq.py`) triggers a Python script (`extract/fmi_aq_ingest_daily.py`) to fetch air quality data from the FMI API twice a day. Each API call contains data from the last 12 hours, so we don't need to call the API constantly.
 
 The Python script sends a request to the FMI API and retrieves XML data. ElementTree is used for parsing the data, element by element, into a pandas dataframe. The dataframe is then written into a Snowflake database's raw-layer.
 
 ## 6. Transforming Data
 
-The dbt model (`transform/fmi_air_quality_transformed.sql`) performs transformations:
+The dbt model (`transform/fmi_air_quality_transformed.sql`) performs several transformations to the data:
   - Splits coordinate data into latitude and longitude.
   - Converts time values into timestamps.
   - Cleans parameter names.
@@ -63,12 +63,20 @@ Finally, the transformed data is written to the Snowflake's analytics layer. The
 
 ## 8. Orchestration
 
-Apache Airflow is used for automating the entire pipeline. Extract script runs 2x a day via an Airflow DAG. dbt transformations are triggered 5 minutes after data ingestion. The completion of different jobs can also be monitored from the Airflow webserver.
+Apache Airflow is used for automating the entire pipeline. Extract script runs 2x a day via an Airflow DAG. dbt transformations are triggered 5 minutes after data ingestion. The completion of pipeline jobs can also be monitored from the Airflow webserver.
 
-## 9. Future Work
+## 9. Example of Data on Snowflake Analytics Layer
+
+As an example, this is an extract of some of the data when transformed and ready to be used on the Snowflake analytics layer:
+
+![Näyttökuva 2025-02-20 194011](https://github.com/user-attachments/assets/5834e0da-23fa-415d-b100-431b02af3098)
+
+## 10. Future Work
 
 A lot could still be done to improve this pipeline, this is just a basic implementation. Some things still to be done:
 
-- Implement testing and data quality checks via dbt.
+- Implement automated testing and data quality checks via dbt.
+- Implement automated snapshotting of data via dbt.
+- Record the actual locations of the coordinates to a seed file in dbt and join it to the data as an extra column.
 - Expand the dataset to include more regions than only Helsinki.
 - Visualize the dataset with Power BI.
